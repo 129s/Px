@@ -62,17 +62,9 @@ main :: proc() {
 
 		rl.DrawText("Debug", PADDING, PADDING + 32, 32, rl.GREEN)
 		p := rl.GetMousePosition()
-		rl.DrawText(
-			fmt.ctprintf("Mouse Position: %.1f, %.1f", p.x, p.y),
-			PADDING,
-			PADDING + 64,
-			32,
-			rl.BLACK,
-		)
 
 		if rl.IsMouseButtonDown(.LEFT) {
 
-			rl.DrawText("MOUSE DOWN", PADDING, PADDING + 96, 32, rl.RED)
 
 			Canvas_set_pixel(&canvas, i32(p.x), i32(p.y), rl.RED)
 
@@ -80,7 +72,6 @@ main :: proc() {
 
 		Canvas_draw_to_screen(&canvas)
 
-		rl.DrawText("Hello, Px!", PADDING, PADDING + 0, 32, rl.BLACK)
 		rl.EndDrawing()
 	}
 }
