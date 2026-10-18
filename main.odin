@@ -31,6 +31,8 @@ Canvas_set_pixel :: proc(c: ^Canvas, x, y: i32, color: rl.Color) {
 	c.data[y * c.size.width + x] = color
 }
 
+// use Brush to "Draw" Color to Canvas,
+// in fact just write the data instead of drawing sth to screen
 Canvas_Brush_draw :: proc(c: ^Canvas, x, y: i32, b: Brush) {
 	s := b.size
 	if s % 2 == 0 {
@@ -191,7 +193,6 @@ main :: proc() {
 
 		// handle mouse input
 		if rl.IsMouseButtonDown(.LEFT) {
-
 			if tool == .Picker {
 				cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
 				cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
@@ -210,11 +211,32 @@ main :: proc() {
 				)
 			}
 
+			if p.x >= canvas.pos_sc.x &&
+			   p.x <= canvas.pos_sc.x + canvas.size.width * canvas.scale / 100 &&
+			   p.y >= canvas.pos_sc.y &&
+			   p.y <= canvas.pos_sc.y + canvas.size.height * canvas.scale / 100 {
+				rl.DrawText(
+					fmt.ctprintf("inside"),
+					PADDING,
+					PADDING + FONT_SIZE * 2,
+					FONT_SIZE,
+					rl.YELLOW,
+				)
+			} else {
+				rl.DrawText(
+					fmt.ctprintf("outside"),
+					PADDING,
+					PADDING + FONT_SIZE * 2,
+					FONT_SIZE,
+					rl.YELLOW,
+				)
+			}
+
+
 			cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
 			cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
 
 			Canvas_Brush_draw(&canvas, cx, cy, brush)
-			// Canvas_set_pixel(&canvas, cx, cy, rl.WHITE)
 
 		}
 
@@ -263,4 +285,5 @@ handle_input :: proc() {
 
 // its just a temp func lab
 draw_debug_info :: proc() {
+
 }
