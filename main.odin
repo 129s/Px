@@ -3,6 +3,9 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
+Vec2i :: struct {
+	x, y: i32,
+}
 
 PADDING :: 16
 
@@ -10,28 +13,18 @@ CanvasSize :: struct {
 	width, height: i32,
 }
 
-Scale :: enum u8 {
-	QUARTER,
-	HALF,
-	FULL,
-	TWO,
-	THREE,
-	FOUR,
-	FIVE,
-	SIX,
-	SEVEN,
-	EIGHT,
-}
-
 Canvas :: struct {
-	size:  CanvasSize,
-	data:  []rl.Color,
-	scale: Scale,
+	pos_sc: Vec2i,
+	size:   CanvasSize,
+	data:   []rl.Color,
+	scale:  i32, // percentage unit
 }
 
-Canvas_init :: proc(c: ^Canvas, s: CanvasSize) {
-	c.size = s
-	c.data = make([]rl.Color, s.width * s.height)
+Canvas_init :: proc(c: ^Canvas, size: CanvasSize, scale: i32) {
+	c.pos_sc = Vec2i{0, 0}
+	c.size = size
+	c.data = make([]rl.Color, size.width * size.height)
+	c.scale = scale
 }
 
 Canvas_set_pixel :: proc(c: ^Canvas, x, y: i32, color: rl.Color) {
@@ -60,7 +53,7 @@ main :: proc() {
 	rl.SetTargetFPS(60)
 
 	canvas := Canvas{}
-	Canvas_init(&canvas, CanvasSize{width = D_SC_W, height = D_SC_H})
+	Canvas_init(&canvas, CanvasSize{width = 32, height = 32}, 400)
 
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
