@@ -16,4 +16,4 @@ odin run .
 - [x] Color Picker
 - [ ] Palette
 - [ ] Layer / Animation
-
+- [ ] File Import / Export

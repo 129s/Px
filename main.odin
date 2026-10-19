@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:os"
 import rl "vendor:raylib"
 
 
@@ -8,23 +9,64 @@ PADDING :: 16
 
 MIN_CANVAS_SCALE :: 100
 MAX_CANVAS_SCALE :: -1
-D_CANVAS_SCALE :: 400
+D_CANVAS_SCALE :: 800
 
-CanvasSize :: struct {
+Data :: []rl.Color
+Frames :: [dynamic]Data
+
+// refer to the Frames representation itself , NOT the Data
+Frames_draw_to_screen :: proc() {
+	// bottom center of screen
+	size: i32 = 32
+	pos := Vec2i {
+		x = sc_w / 2 - ((PADDING + size) * i32(len(frames))) / 2,
+		y = sc_h - PADDING - size * 2,
+	}
+	for i in 0 ..< len(frames) {
+		if c_frame_i == u8(i) {
+			rl.DrawRectangle(pos.x + i32(i) * (PADDING + size), pos.y, size, size, rl.YELLOW)
+			rl.DrawRectangleLines(
+				pos.x + i32(i) * (PADDING + size) - 1,
+				pos.y - 1,
+				size + 2,
+				size + 2,
+				rl.GREEN,
+			)
+		} else {
+			rl.DrawRectangle(pos.x + i32(i) * (PADDING + size), pos.y, size, size, rl.WHITE)
+			rl.DrawRectangleLines(
+				pos.x + i32(i) * (PADDING + size) - 1,
+				pos.y - 1,
+				size + 2,
+				size + 2,
+				rl.YELLOW,
+			)
+		}
+
+	}
+}
+
+
+frames: Frames
+c_frame_i: u8 = 0
+play_speed: u8 = 5 // frames per second
+is_play := false
+
+Canvas_Size :: struct {
 	width, height: i32,
 }
 
 Canvas :: struct {
 	pos_sc: Vec2i,
-	size:   CanvasSize,
-	data:   []rl.Color,
+	size:   Canvas_Size,
+	data:   ^Data,
 	scale:  i32, // percentage unit
 }
 
-Canvas_init :: proc(c: ^Canvas, size: CanvasSize, scale: i32) {
+Canvas_init :: proc(c: ^Canvas, size: Canvas_Size, frame: ^Data, scale: i32) {
 	c.pos_sc = Vec2i{0, 0}
 	c.size = size
-	c.data = make([]rl.Color, size.width * size.height)
+	c.data = frame
 	c.scale = scale
 }
 
@@ -56,6 +98,10 @@ Canvas_Brush_draw :: proc(c: ^Canvas, x, y: i32, b: Brush) {
 
 Canvas_draw_to_screen :: proc(c: ^Canvas) {
 	// draw outline border
+	if is_play {
+
+	}
+
 	rl.DrawRectangleLines(
 		c.pos_sc.x - 1,
 		c.pos_sc.y - 1,
@@ -63,7 +109,6 @@ Canvas_draw_to_screen :: proc(c: ^Canvas) {
 		c.size.height * c.scale / 100 + 2,
 		rl.YELLOW,
 	)
-
 
 	for y in 0 ..< c.size.height {
 		for x in 0 ..< c.size.width {
@@ -165,7 +210,13 @@ main :: proc() {
 	sc_w, sc_h = rl.GetScreenWidth(), rl.GetScreenHeight()
 
 
-	Canvas_init(&canvas, CanvasSize{width = 32, height = 32}, 800)
+	// init frames
+	frames = {}
+	c_frame_i = 0
+	for i in 0 ..< 8 {
+		append(&frames, make([]rl.Color, 32 * 32))
+	}
+	Canvas_init(&canvas, Canvas_Size{width = 32, height = 32}, &frames[c_frame_i], D_CANVAS_SCALE)
 	Palette_init(
 		&palette,
 		{rl.RED, rl.GREEN, rl.BLUE, rl.YELLOW, rl.ORANGE, rl.PURPLE, rl.WHITE, rl.BLACK},
@@ -196,6 +247,7 @@ main :: proc() {
 		Canvas_draw_to_screen(&canvas)
 		Palette_draw_to_screen(&palette)
 		Brush_draw_info(brush, sc_w, sc_h)
+		Frames_draw_to_screen()
 		draw_debug_info()
 
 		rl.EndDrawing()
@@ -261,6 +313,7 @@ main :: proc() {
 	}
 }
 
+
 handle_input :: proc() {
 	// brush size increase/decrease
 	if rl.IsKeyPressed(.Q) {
@@ -271,6 +324,25 @@ handle_input :: proc() {
 	if rl.IsKeyPressed(.E) {
 		brush.size += 1
 	}
+	if rl.IsKeyPressed(.R) {
+		canvas.scale = D_CANVAS_SCALE
+	}
+
+	// Use WASD To Move Around Layers and Frames
+	if rl.IsKeyPressed(.A) {
+		c_frame_i = (c_frame_i - 1) % u8(len(frames))
+		canvas.data = &frames[c_frame_i]
+	}
+	if rl.IsKeyPressed(.D) {
+		c_frame_i = (c_frame_i + 1) % u8(len(frames))
+		canvas.data = &frames[c_frame_i]
+	}
+
+	// handle play
+	if rl.IsKeyPressed(.SPACE) {
+		is_play = !is_play
+	}
+
 	// color picker mode when alt is being pressed
 	if rl.IsKeyDown(.LEFT_ALT) || rl.IsKeyDown(.RIGHT_ALT) {
 		tool = .Picker
