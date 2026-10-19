@@ -53,10 +53,10 @@ Canvas_Brush_draw :: proc(c: ^Canvas, x, y: i32, b: Brush) {
 Canvas_draw_to_screen :: proc(c: ^Canvas) {
 	// draw outline border
 	rl.DrawRectangleLines(
-		c.pos_sc.x,
-		c.pos_sc.y,
-		c.size.width * c.scale / 100,
-		c.size.height * c.scale / 100,
+		c.pos_sc.x - 1,
+		c.pos_sc.y - 1,
+		c.size.width * c.scale / 100 + 2,
+		c.size.height * c.scale / 100 + 2,
 		rl.YELLOW,
 	)
 
@@ -78,6 +78,8 @@ Canvas_clear :: proc(c: ^Canvas, color: rl.Color) {
 	}
 }
 
+PALETTE_WIDTH :: 8 // 8 colors per row, not screen width
+
 Palette :: struct {
 	colors: []rl.Color,
 }
@@ -89,9 +91,9 @@ Palette_init :: proc(p: ^Palette, colors: []rl.Color) {
 Palette_draw_to_screen :: proc(p: ^Palette) {
 	pos := Vec2i{PADDING, PADDING}
 	size: i32 = 32
-	for i in 0 ..< len(p.colors) {
+	for i in 0 ..< len(p.colors) / PALETTE_WIDTH {
 		rl.DrawRectangle(pos.x + i32(i) * size, pos.y, size, size, p.colors[i])
-		rl.DrawRectangleLines(pos.x + i32(i) * size, pos.y, size, size, rl.YELLOW)
+		rl.DrawRectangleLines(pos.x + i32(i) * size - 1, pos.y - 1, size + 2, size + 2, rl.YELLOW)
 	}
 }
 
@@ -101,10 +103,10 @@ Brush_draw_info :: proc(b: Brush, sc_w, sc_h: i32) {
 
 	// foreground and background color
 	rl.DrawRectangle(pos.x, pos.y - size, size, size, brush.f_color)
-	rl.DrawRectangleLines(pos.x, pos.y - size, size, size, rl.YELLOW)
+	rl.DrawRectangleLines(pos.x - 1, pos.y - size - 1, size + 2, size + 2, rl.YELLOW)
 
 	rl.DrawRectangle(pos.x, pos.y - size * 2 - PADDING, size, size, brush.b_color)
-	rl.DrawRectangleLines(pos.x, pos.y - size * 2 - PADDING, size, size, rl.YELLOW)
+	rl.DrawRectangleLines(pos.x - 1, pos.y - size * 2 - PADDING - 1, size + 2, size + 2, rl.YELLOW)
 
 	// brush size
 	rl.DrawText(
@@ -181,36 +183,22 @@ main :: proc() {
 
 		handle_input()
 
+		// handle mouse input
+
+		if rl.IsMouseButtonDown(.RIGHT) {
+		}
+
+
+		Canvas_draw_to_screen(&canvas)
+		Palette_draw_to_screen(&palette)
+		Brush_draw_info(brush, sc_w, sc_h)
+		draw_debug_info()
+
+		rl.EndDrawing()
+
 		switch tool {
 		case .Pencil:
 			rl.DrawText("Tool: Pencil", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
-		case .Eraser:
-			rl.DrawText("Tool: Eraser", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
-		case .Picker:
-			rl.DrawText("Tool: Picker", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
-
-		}
-
-		// handle mouse input
-		if rl.IsMouseButtonDown(.LEFT) {
-			if tool == .Picker {
-				cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
-				cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
-
-				if cx < 0 || cx >= canvas.size.width || cy < 0 || cy >= canvas.size.height {
-					break
-				}
-
-				color := canvas.data[cy * canvas.size.width + cx]
-				rl.DrawText(
-					fmt.ctprintf("Picked color: ", color),
-					sc_w / 2,
-					0,
-					FONT_SIZE,
-					rl.WHITE,
-				)
-			}
-
 			if p.x >= canvas.pos_sc.x &&
 			   p.x <= canvas.pos_sc.x + canvas.size.width * canvas.scale / 100 &&
 			   p.y >= canvas.pos_sc.y &&
@@ -222,40 +210,33 @@ main :: proc() {
 					FONT_SIZE,
 					rl.YELLOW,
 				)
-			} else {
+				// only in canvas area can draw
+				cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
+				cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
+				if rl.IsMouseButtonDown(.LEFT) {
+					Canvas_Brush_draw(&canvas, cx, cy, brush)
+				}
+			}
+		case .Eraser:
+			rl.DrawText("Tool: Eraser", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
+		case .Picker:
+			rl.DrawText("Tool: Picker", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
+			if rl.IsMouseButtonDown(.LEFT) {
 				rl.DrawText(
-					fmt.ctprintf("outside"),
+					fmt.ctprintf("Picker: %d, %d", p.x, p.y),
 					PADDING,
 					PADDING + FONT_SIZE * 2,
 					FONT_SIZE,
 					rl.YELLOW,
 				)
+				brush.f_color = rl.GetImageColor(rl.LoadImageFromScreen(), p.x, p.y)
 			}
-
-
-			cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
-			cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
-
-			Canvas_Brush_draw(&canvas, cx, cy, brush)
+		case:
+			rl.DrawText("Tool: Unknown", PADDING, PADDING + 32, FONT_SIZE, rl.RED)
 
 		}
 
-		if rl.IsMouseButtonDown(.RIGHT) {
 
-			cx := (p.x - canvas.pos_sc.x) * 100 / canvas.scale
-			cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
-
-			Canvas_Brush_draw(&canvas, cx, cy, brush)
-			// Canvas_set_pixel(&canvas, cx, cy, {0, 0, 0, 0})
-
-		}
-
-		Canvas_draw_to_screen(&canvas)
-		Palette_draw_to_screen(&palette)
-		Brush_draw_info(brush, sc_w, sc_h)
-		draw_debug_info()
-
-		rl.EndDrawing()
 	}
 }
 

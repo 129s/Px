@@ -13,7 +13,7 @@ odin run .
 - [x] Q/E decrease/increase brush size
 - [ ] Move canvas (hand tool)
 - [ ] Zoom in/out
-- [ ] Color Picker
+- [x] Color Picker
 - [ ] Palette
 - [ ] Layer / Animation
 
