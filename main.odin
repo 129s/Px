@@ -6,6 +6,10 @@ import rl "vendor:raylib"
 
 PADDING :: 16
 
+MIN_CANVAS_SCALE :: 100
+MAX_CANVAS_SCALE :: -1
+D_CANVAS_SCALE :: 400
+
 CanvasSize :: struct {
 	width, height: i32,
 }
@@ -121,7 +125,7 @@ Brush_draw_info :: proc(b: Brush, sc_w, sc_h: i32) {
 
 Tool :: enum {
 	Pencil,
-	Eraser,
+	Hand,
 	Picker,
 }
 
@@ -215,10 +219,28 @@ main :: proc() {
 				cy := (p.y - canvas.pos_sc.y) * 100 / canvas.scale
 				if rl.IsMouseButtonDown(.LEFT) {
 					Canvas_Brush_draw(&canvas, cx, cy, brush)
+				} else if rl.IsMouseButtonDown(.RIGHT) {
+					Canvas_Brush_draw(
+						&canvas,
+						cx,
+						cy,
+						Brush{f_color = brush.b_color, b_color = brush.f_color, size = brush.size},
+					)
 				}
 			}
-		case .Eraser:
-			rl.DrawText("Tool: Eraser", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
+		case .Hand:
+			rl.DrawText("Tool: Hand", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
+			if rl.IsMouseButtonDown(.LEFT) {
+				canvas.pos_sc.x += i32(rl.GetMouseDelta().x)
+				canvas.pos_sc.y += i32(rl.GetMouseDelta().y)
+			}
+			d := rl.GetMouseWheelMove()
+			if canvas.scale > MIN_CANVAS_SCALE && d < 0 {
+				canvas.scale += i32(d * 100)
+			} else if (MAX_CANVAS_SCALE < 0 || canvas.scale < MAX_CANVAS_SCALE) && d > 0 {
+				canvas.scale += i32(d * 100)
+			}
+
 		case .Picker:
 			rl.DrawText("Tool: Picker", PADDING, PADDING + 32, FONT_SIZE, rl.GREEN)
 			if rl.IsMouseButtonDown(.LEFT) {
@@ -233,7 +255,6 @@ main :: proc() {
 			}
 		case:
 			rl.DrawText("Tool: Unknown", PADDING, PADDING + 32, FONT_SIZE, rl.RED)
-
 		}
 
 
@@ -253,6 +274,9 @@ handle_input :: proc() {
 	// color picker mode when alt is being pressed
 	if rl.IsKeyDown(.LEFT_ALT) || rl.IsKeyDown(.RIGHT_ALT) {
 		tool = .Picker
+	} else if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
+		tool = .Hand
+
 	} else {
 		tool = .Pencil
 	}
@@ -266,5 +290,13 @@ handle_input :: proc() {
 
 // its just a temp func lab
 draw_debug_info :: proc() {
+
+	rl.DrawText(
+		fmt.ctprintf("Canvas Scale: %d%%", canvas.scale),
+		PADDING,
+		PADDING + FONT_SIZE * 3,
+		FONT_SIZE,
+		rl.YELLOW,
+	)
 
 }

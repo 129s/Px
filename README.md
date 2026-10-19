@@ -11,8 +11,8 @@ odin run .
 ## Features
 - [x] Click to draw
 - [x] Q/E decrease/increase brush size
-- [ ] Move canvas (hand tool)
-- [ ] Zoom in/out
+- [x] Move canvas (hand tool)
+- [x] Zoom in/out
 - [x] Color Picker
 - [ ] Palette
 - [ ] Layer / Animation
